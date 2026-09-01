@@ -1,0 +1,17 @@
+{
+  "name": "shopee-affiliate-zalo-bot-phase1",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Phase 1: receive a Shopee URL, resolve/canonicalize it, create a tracked affiliate link, optionally fetch estimated commission from Shopee Affiliate Open API, and build a Zalo reply message.",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "dev": "node --watch src/server.mjs",
+    "demo": "node scripts/demo.mjs",
+    "test": "node --test",
+    "demo:messages": "node scripts/message-demo.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
