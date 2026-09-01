@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Zalo Message Simulator — Phase 1</title>
+  <style>
+    :root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #172033; background: #f4f7fb; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 32px 16px; }
+    main { max-width: 920px; margin: 0 auto; display: grid; gap: 18px; }
+    .card { background: white; border: 1px solid #dbe3ef; border-radius: 16px; padding: 20px; box-shadow: 0 10px 30px rgba(26, 49, 88, .06); }
+    h1 { margin: 0 0 8px; font-size: 26px; } h2 { margin-top: 0; font-size: 18px; }
+    p { color: #5b667a; line-height: 1.5; }
+    label { display: block; font-size: 13px; font-weight: 700; margin: 14px 0 6px; }
+    input, textarea { width: 100%; border: 1px solid #ccd6e5; border-radius: 10px; padding: 11px 12px; font: inherit; background: #fff; }
+    textarea { min-height: 92px; resize: vertical; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    button { margin-top: 16px; border: 0; border-radius: 10px; padding: 11px 16px; background: #1769ff; color: white; font-weight: 800; cursor: pointer; }
+    .bubble { white-space: pre-wrap; background: #e8f2ff; border-radius: 14px 14px 4px 14px; padding: 14px 16px; line-height: 1.5; min-height: 60px; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #111827; color: #e5e7eb; padding: 14px; border-radius: 10px; max-height: 320px; overflow: auto; }
+    .muted { color: #6b7280; }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<main>
+  <section class="card">
+    <h1>Zalo Message Simulator — Phase 1</h1>
+    <p>Test <strong>normalize → parser → router → template</strong> trước khi nối nick Zalo thật. Mock Affiliate chỉ dùng để kiểm tra mẫu phản hồi; không gọi Shopee API.</p>
+    <div class="grid"><div><label>Tên người gửi</label><input id="senderName" value="Thanh Thanh" /></div><div><label>Sender ID</label><input id="senderId" value="zalo-user-123" /></div></div>
+    <label>Tin nhắn</label><textarea id="text">https://shopee.vn/product/731999859/41261407193?d_id=e13c7&utm_content=test</textarea>
+    <h2 style="margin-top:22px">Mock kết quả Shopee để test giao diện</h2>
+    <div class="grid"><div><label>Tên sản phẩm</label><input id="productName" value="Sản phẩm test Phase 1" /></div><div><label>Hoa hồng API</label><input id="commission" type="number" value="12350" /></div></div>
+    <label>Affiliate URL mock</label><input id="affiliateUrl" value="https://s.shopee.vn/TEST_PHASE1" />
+    <button id="run">Phân tích & tạo phản hồi</button>
+  </section>
+  <section class="card"><h2>Phản hồi bot</h2><div id="reply" class="bubble muted">Chưa chạy.</div></section>
+  <section class="card"><h2>Kết quả parser/router</h2><pre id="debug">{}</pre></section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  $('run').addEventListener('click', async () => {
+    $('reply').textContent = 'Đang xử lý...'; $('reply').classList.add('muted');
+    const body = { senderId: $('senderId').value, senderName: $('senderName').value, groupId: 'simulator-group', messageId: 'sim-' + Date.now(), text: $('text').value, previewCommands: true, mockAffiliate: { productName: $('productName').value, commission: Number($('commission').value), affiliateUrl: $('affiliateUrl').value } };
+    try {
+      const res = await fetch('/api/v1/messages/simulate', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      const json = await res.json(); const data = json.data || {}; $('debug').textContent = JSON.stringify(data, null, 2);
+      if (data.reply?.text) { $('reply').textContent = data.reply.text; $('reply').classList.remove('muted'); }
+      else $('reply').textContent = `Không phản hồi (${data.reason || data.action || 'unknown'})`;
+    } catch (error) { $('reply').textContent = String(error); $('debug').textContent = String(error); }
+  });
+</script>
+</body>
+</html>
