@@ -6,15 +6,24 @@ export function formatVnd(value) {
 export function buildAffiliateReply({ displayName, affiliateUrl, productName, commission }) {
   const who = displayName ? `@${displayName}` : 'Bạn';
   const lines = [`${who} ơi mua qua link này được hoa hồng nhé 👇`];
+
   if (productName) lines.push('', `🛍 ${productName}`);
   if (affiliateUrl) lines.push(`👉 Link mua: ${affiliateUrl}`);
-  if (commission != null) lines.push(`🌷 Hoa hồng ước tính: ${formatVnd(commission)}`);
+
+  if (commission != null) {
+    lines.push(`🌷 Hoa hồng ước tính: ${formatVnd(commission)}`);
+  }
+
   return lines.join('\n');
 }
 
 export function buildAffiliatePendingReply({ displayName }) {
   const who = displayName ? `@${displayName}` : 'Bạn';
-  return [`${who} đã gửi link sản phẩm Shopee ✅`, '', '⏳ Phần tạo link Affiliate và lấy hoa hồng đang chờ Shopee cấp quyền Open API.'].join('\n');
+  return [
+    `${who} đã gửi link sản phẩm Shopee ✅`,
+    '',
+    '⏳ Phần tạo link Affiliate và lấy hoa hồng đang chờ Shopee cấp quyền Open API.'
+  ].join('\n');
 }
 
 export function buildUnsupportedMediaReply({ displayName, kind = 'VIDEO_LIVE' }) {

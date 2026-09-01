@@ -1,6 +1,19 @@
 import { buildCommandPreviewReply } from '../templates/command.template.mjs';
 
 export async function handleCommand({ message, parsed, previewCommands = false }) {
+  if (parsed.command === 'ping') {
+    return {
+      action: 'REPLY',
+      handler: 'command:ping',
+      reply: {
+        text: `${message.senderName ? `@${message.senderName} ` : ''}pong ✅`,
+        quoteMessageId: message.messageId || null,
+        mentions: message.senderId ? [{ userId: message.senderId, displayName: message.senderName || '' }] : []
+      },
+      data: { command: 'ping', mode: 'transport-test' }
+    };
+  }
+
   if (!previewCommands) {
     return {
       action: 'NO_REPLY',

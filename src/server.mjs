@@ -62,6 +62,7 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, data: result });
     }
 
+    // Pure local simulator for parser/router/template testing before a real Zalo account is connected.
     if (req.method === 'POST' && url.pathname === '/api/v1/messages/simulate') {
       const body = await readJson(req);
       const result = await router.route({

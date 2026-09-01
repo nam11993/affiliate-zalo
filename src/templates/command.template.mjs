@@ -1,4 +1,11 @@
-const COMMAND_LABELS = { vitien: '#vitien', donhang: '#donhang', bank: '#bank', ruttien: '#ruttien', id: '#id' };
+const COMMAND_LABELS = {
+  ping: '#ping',
+  vitien: '#vitien',
+  donhang: '#donhang',
+  bank: '#bank',
+  ruttien: '#ruttien',
+  id: '#id'
+};
 
 export function buildCommandPreviewReply({ displayName, command }) {
   const who = displayName ? `@${displayName}` : 'Bạn';

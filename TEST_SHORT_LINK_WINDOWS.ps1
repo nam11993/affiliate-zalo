@@ -34,6 +34,7 @@ function Find-ShopeeUrlInHtml([string]$html, [string]$currentUrl) {
     if ([string]::IsNullOrWhiteSpace($html)) { return $null }
     $normalized = $html.Replace('\/','/').Replace('&amp;','&')
 
+    # Prefer explicit Shopee Video / Live / Product URLs if a bridge page embeds them.
     $patterns = @(
         'https?://sv\.shopee\.vn/[^"''<>\s]+',
         'https?://live\.shopee\.vn/[^"''<>\s]+',
@@ -51,6 +52,7 @@ function Find-ShopeeUrlInHtml([string]$html, [string]$currentUrl) {
         }
     }
 
+    # Common HTML/JS redirect forms.
     $genericPatterns = @(
         'url\s*=\s*["'']?([^"'';>\s]+)',
         '(?:window\.)?location(?:\.href)?\s*=\s*["'']([^"'']+)["'']',
@@ -104,6 +106,7 @@ function Resolve-ShopeeShortLink([string]$urlText) {
         $finalType = Get-ShopeeLinkType $finalUrl
         $source = 'HTTP_REDIRECT'
 
+        # Some short links can end at an HTML bridge page rather than a plain 30x redirect.
         if ($finalType -eq 'SHORT' -or $finalType -eq 'OTHER') {
             $html = $response.Content.ReadAsStringAsync().GetAwaiter().GetResult()
             $embedded = Find-ShopeeUrlInHtml $html $finalUrl

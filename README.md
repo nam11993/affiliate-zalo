@@ -154,3 +154,53 @@ Khi bắt đầu chạy backend/Zalo listener thật mới cần Node.js 20+.
 
 ### Windows simulator - lỗi `$Host` read-only
 Nếu gặp lỗi `Cannot overwrite variable Host because it is read-only or constant`, đó là do Windows PowerShell có biến hệ thống `$Host` chỉ đọc. Bản hiện tại đã đổi biến nội bộ sang `$urlHost` và đồng thời tránh dùng biến tự động `$input` cho request URL.
+
+## Zalo personal listener — bước test hiện tại
+
+> `zca-js` là API Zalo cá nhân **không chính thức**. Mặc định project chạy READ ONLY để giảm rủi ro: đọc/log message nhưng không gửi gì.
+
+### Cách test an toàn đầu tiên trên Windows
+
+1. Double-click `START_ZALO_READONLY.bat`.
+2. Lần đầu script sẽ chạy `npm install` và cài `zca-js@2.1.2`.
+3. Quét QR bằng nick Zalo test trên điện thoại.
+4. **Không mở Zalo Web** bằng cùng tài khoản trong lúc listener chạy.
+5. Dùng nick khác gửi một tin nhắn vào group test.
+6. Cửa sổ terminal sẽ hiện `Group ID`, `Sender`, `Message ID`, `Text`, intent parser và nếu là Shopee short link thì kết quả `PRODUCT / VIDEO / LIVE / OTHER`.
+7. Bot **không reply** ở bước này.
+
+Sau khi thấy đúng Group ID, mở `.env` và điền:
+
+```env
+ZALO_ALLOWED_GROUP_IDS=<group-id-vừa-log-ra>
+```
+
+Chỉ khi muốn test gửi thật mới chạy `START_ZALO_REPLY_TEST.bat`. File này từ chối chạy nếu allowlist đang trống.
+
+### Cấu hình Zalo
+
+```env
+ZALO_REPLY_ENABLED=false
+ZALO_ALLOWED_GROUP_IDS=
+ZALO_LISTEN_DIRECT=false
+ZALO_CLASSIFY_SHOPEE_LINKS=true
+ZALO_REPLY_COOLDOWN_MS=3000
+ZALO_VERBOSE_RAW=false
+```
+
+- `ZALO_REPLY_ENABLED=false`: read-only, lựa chọn an toàn mặc định.
+- `ZALO_ALLOWED_GROUP_IDS`: danh sách Group ID, cách nhau bằng dấu phẩy.
+- `ZALO_LISTEN_DIRECT=false`: không xử lý tin nhắn riêng.
+- `ZALO_VERBOSE_RAW=false`: không dump toàn bộ raw message để hạn chế log dữ liệu không cần thiết.
+
+## Zalo transport test / troubleshooting
+
+Run `START_ZALO_BOT_DEBUG.bat`, then after login send `#ping` from **another Zalo account** in the test group.
+Expected reply: `@<name> pong ✅`.
+
+Important: zca-js defaults to not listening to messages sent by the same account (`selfListen=false`). For safety this project keeps that behavior and ignores `message.isSelf` to avoid reply loops. Therefore do not test by typing from the same account that scanned the QR. Use a second Zalo account/member.
+
+The debug build prints `[ZALO EVENT]` for every received event before business filters. If no `[ZALO EVENT]` appears, the problem is listener/session/Zalo Web, not the Shopee parser.
+
+### Zalo link-preview messages (`chat.link`)
+Zalo may emit a pasted URL not as plain text but as `data.content` object (for example `msgType=chat.link`) with the actual URL in `content.href`. The listener now normalizes both plain text and link-preview objects before routing, so pasted Shopee short links are not ignored.

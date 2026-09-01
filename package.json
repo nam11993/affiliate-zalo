@@ -9,9 +9,13 @@
     "dev": "node --watch src/server.mjs",
     "demo": "node scripts/demo.mjs",
     "test": "node --test",
-    "demo:messages": "node scripts/message-demo.mjs"
+    "demo:messages": "node scripts/message-demo.mjs",
+    "zalo:listen": "node scripts/zalo-listen.mjs"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "zca-js": "2.1.2"
   }
 }

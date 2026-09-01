@@ -19,6 +19,7 @@ export function makeTracking({ userId = 'guest', source = 'zalo', custom = 'phas
   return {
     clickId: subIds[1],
     subIds,
+    // Keep up to 5 compact tracking values so they can be forwarded to Shopee Open API subIds later.
     subId: subIds.join('-')
   };
 }

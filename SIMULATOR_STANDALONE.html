@@ -95,6 +95,7 @@
   const SHORT_HOSTS = new Set(['vn.shp.ee','shp.ee','s.shopee.vn','shopee.page.link']);
   const hasLiveResolver = location.protocol === 'http:' || location.protocol === 'https:';
 
+  // Fallback only for the exact sample when HTML is opened directly. Normal test path is live resolver via BAT.
   const RESOLVE_FIXTURES = new Map([
     ['vn.shp.ee/58nvmrdm', { resolvedUrl:'https://sv.shopee.vn/share-video/demo?smtt=0.0.9', linkType:'VIDEO', source:'OFFLINE_FIXTURE' }]
   ]);
@@ -195,12 +196,19 @@
     if(parsed.type==='SHOPEE_URL'){
       const originalUrl=parsed.urls[0];
       let classification;
-      try { classification = await resolveAndClassify(originalUrl); }
-      catch(error) { return {action:'NO_REPLY',reason:'SHORT_LINK_RESOLVE_FAILED',handler:'affiliate-link',parsed,error:String(error.message||error),diagnostic:String(error.message||error)}; }
+      try {
+        classification = await resolveAndClassify(originalUrl);
+      } catch(error) {
+        return {action:'NO_REPLY',reason:'SHORT_LINK_RESOLVE_FAILED',handler:'affiliate-link',parsed,error:String(error.message||error),diagnostic:String(error.message||error)};
+      }
 
       const finalType = classification.linkType;
-      if(finalType==='VIDEO' || finalType==='LIVE') return {action:'REPLY',handler:'unsupported-media-link',parsed,classification,reply:replyEnvelope(msg,mediaReply(msg.senderName))};
-      if(finalType==='PRODUCT') return {action:'REPLY',handler:'affiliate-link',parsed,classification,reply:replyEnvelope(msg,buildAffiliateReply(msg.senderName,$('affiliateUrl').value,$('productName').value,$('commission').value))};
+      if(finalType==='VIDEO' || finalType==='LIVE'){
+        return {action:'REPLY',handler:'unsupported-media-link',parsed,classification,reply:replyEnvelope(msg,mediaReply(msg.senderName))};
+      }
+      if(finalType==='PRODUCT'){
+        return {action:'REPLY',handler:'affiliate-link',parsed,classification,reply:replyEnvelope(msg,buildAffiliateReply(msg.senderName,$('affiliateUrl').value,$('productName').value,$('commission').value))};
+      }
       return {action:'REPLY',handler:'unsupported-shopee-link',parsed,classification,reply:replyEnvelope(msg,unsupportedReply(msg.senderName))};
     }
     if(parsed.type==='COMMAND') return {action:'REPLY',handler:`command:${parsed.command}`,parsed,reply:replyEnvelope(msg,commandReply(msg.senderName,parsed.command))};

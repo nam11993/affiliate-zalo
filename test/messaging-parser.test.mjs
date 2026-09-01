@@ -9,7 +9,9 @@ test('parser recognizes exact commands', () => {
 });
 
 test('parser recognizes #bank with args', () => {
-  assert.deepEqual(parseMessage('#bank 0123456789.VCB.NGUYEN VAN A'), { type: 'COMMAND', command: 'bank', args: '0123456789.VCB.NGUYEN VAN A' });
+  assert.deepEqual(parseMessage('#bank 0123456789.VCB.NGUYEN VAN A'), {
+    type: 'COMMAND', command: 'bank', args: '0123456789.VCB.NGUYEN VAN A'
+  });
 });
 
 test('parser extracts Shopee URL even when surrounded by normal text', () => {

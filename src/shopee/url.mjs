@@ -47,7 +47,9 @@ function extractShopeeUrlFromHtml(html, baseUrl) {
       if (isAllowedShopeeHost(candidate.hostname) && candidate.toString() !== baseUrl.toString()) {
         return candidate;
       }
-    } catch {}
+    } catch {
+      // Ignore malformed candidates and continue scanning.
+    }
   }
   return null;
 }
@@ -73,14 +75,19 @@ export async function resolveShopeeUrl(input, { timeoutMs = 10000, maxRedirects 
         const location = response.headers.get('location');
         if (!location) throw new Error(`Redirect ${response.status} thiếu Location.`);
         const next = new URL(location, current);
-        if (!isAllowedShopeeHost(next.hostname)) throw new Error(`Shopee redirect sang domain không được phép: ${next.hostname}`);
+        if (!isAllowedShopeeHost(next.hostname)) {
+          throw new Error(`Shopee redirect sang domain không được phép: ${next.hostname}`);
+        }
         current = next;
         continue;
       }
 
+      // Some environments transparently expose the final URL even when no manual redirect remains.
       const effective = response.url ? new URL(response.url) : current;
       if (!isAllowedShopeeHost(effective.hostname)) throw new Error(`URL cuối không thuộc Shopee: ${effective.hostname}`);
 
+      // Shopee can occasionally use an HTML/JS bridge instead of another HTTP 30x.
+      // Follow one embedded Shopee URL instead of incorrectly classifying the bridge page.
       const contentType = response.headers?.get?.('content-type') || '';
       if (contentType.includes('text/html') || current.hostname.includes('shp.ee') || current.hostname === 's.shopee.vn') {
         try {
@@ -90,7 +97,9 @@ export async function resolveShopeeUrl(input, { timeoutMs = 10000, maxRedirects 
             current = embedded;
             continue;
           }
-        } catch {}
+        } catch {
+          // If reading/parsing the bridge body fails, keep the effective URL below.
+        }
       }
       return effective.toString();
     } finally {
@@ -133,7 +142,9 @@ export function canonicalizeShopeeUrl(input) {
   const removePrefixes = ['utm_', 'uls_'];
   const removeExact = new Set(['affiliate_id', 'sub_id', 'smtt', 'sp_atk', 'xptdk']);
   for (const key of [...clean.searchParams.keys()]) {
-    if (removeExact.has(key) || removePrefixes.some(prefix => key.toLowerCase().startsWith(prefix))) clean.searchParams.delete(key);
+    if (removeExact.has(key) || removePrefixes.some(prefix => key.toLowerCase().startsWith(prefix))) {
+      clean.searchParams.delete(key);
+    }
   }
   clean.hash = '';
   return clean.toString();

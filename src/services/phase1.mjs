@@ -16,6 +16,8 @@ function normalizeMoney(value) {
 function buildCommission(offer) {
   if (!offer) return null;
   return {
+    // Phase 1 business rule: display Shopee's API `commission` value exactly as received.
+    // Do not apply tax, revenue-share, payout, or any other local calculation.
     estimatedCommission: normalizeMoney(offer.commission),
     commissionRate: normalizeMoney(offer.commissionRate),
     sellerCommissionRate: normalizeMoney(offer.sellerCommissionRate),
@@ -81,7 +83,9 @@ export async function processShopeeLink({ url, userId, displayName, resolve = tr
     }
   }
 
-  if (!affiliateUrl) affiliateSource = 'pending_open_api';
+  if (!affiliateUrl) {
+    affiliateSource = 'pending_open_api';
+  }
 
   const commission = buildCommission(offer);
   const product = offer ? {
@@ -106,7 +110,7 @@ export async function processShopeeLink({ url, userId, displayName, resolve = tr
     tracking,
     product,
     commission,
-    warnings: openApiError ? [`Open API không dùng được: ${openApiError}`] : []
+    warnings: openApiError ? [`Open API không dùng được, đã fallback: ${openApiError}`] : []
   };
 
   result.replyText = affiliateUrl

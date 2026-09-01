@@ -12,6 +12,7 @@ export class ShopeeAffiliateOpenApi {
   async request(query, variables = {}) {
     if (!this.appId || !this.secret) throw new Error('Thiếu Shopee Open API App ID/Secret.');
 
+    // IMPORTANT: signature is calculated from the exact payload string sent over HTTP.
     const payload = JSON.stringify({ query, variables });
     const timestamp = Math.floor(Date.now() / 1000);
     const signature = crypto
@@ -85,6 +86,7 @@ export class ShopeeAffiliateOpenApi {
         }
       }
     `;
+    // Int64 is commonly represented by numeric JSON values in Shopee's schema.
     const variables = { shopId: Number(shopId), itemId: Number(itemId) };
     const data = await this.request(query, variables);
     const nodes = data?.productOfferV2?.nodes || [];

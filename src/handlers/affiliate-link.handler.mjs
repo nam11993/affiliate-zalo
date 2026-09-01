@@ -27,10 +27,17 @@ function unsupportedResult({ message, kind, originalUrl, resolvedUrl = null, mod
   };
 }
 
-export async function handleAffiliateLink({ message, parsed, mockAffiliate = null, processLink = null, classifyLink = null }) {
+export async function handleAffiliateLink({
+  message,
+  parsed,
+  mockAffiliate = null,
+  processLink = null,
+  classifyLink = null
+}) {
   const url = parsed.urls[0];
   const directType = classifyShopeeUrl(url);
 
+  // IMPORTANT: short links must be resolved before classification. Never assume SHORT = PRODUCT.
   let classified = null;
   if (classifyLink) {
     try {
@@ -40,7 +47,11 @@ export async function handleAffiliateLink({ message, parsed, mockAffiliate = nul
         action: 'NO_REPLY',
         handler: 'affiliate-link',
         reason: 'SHORT_LINK_RESOLVE_FAILED',
-        data: { originalUrl: url, linkType: directType, error: error instanceof Error ? error.message : String(error) }
+        data: {
+          originalUrl: url,
+          linkType: directType,
+          error: error instanceof Error ? error.message : String(error)
+        }
       };
     }
   } else if (mockAffiliate?.resolvedUrl) {
@@ -52,28 +63,59 @@ export async function handleAffiliateLink({ message, parsed, mockAffiliate = nul
       wasShort: directType === 'SHORT'
     };
   } else if (directType !== 'SHORT') {
-    classified = { originalUrl: url, resolvedUrl: url, linkType: directType, directType, wasShort: false };
+    classified = {
+      originalUrl: url,
+      resolvedUrl: url,
+      linkType: directType,
+      directType,
+      wasShort: false
+    };
   }
 
   if (!classified) {
-    return { action: 'NO_REPLY', handler: 'affiliate-link', reason: 'SHORT_LINK_NEEDS_RESOLVE', data: { originalUrl: url, linkType: 'SHORT' } };
+    return {
+      action: 'NO_REPLY',
+      handler: 'affiliate-link',
+      reason: 'SHORT_LINK_NEEDS_RESOLVE',
+      data: { originalUrl: url, linkType: 'SHORT' }
+    };
   }
 
   const finalType = classified.linkType;
   const resolvedUrl = classified.resolvedUrl || url;
 
+  // A resolver result that is still SHORT is not enough to decide the business action.
   if (finalType === 'SHORT') {
-    return { action: 'NO_REPLY', handler: 'affiliate-link', reason: 'SHORT_LINK_STILL_NEEDS_RESOLVE', data: { originalUrl: url, resolvedUrl, linkType: 'SHORT' } };
+    return {
+      action: 'NO_REPLY',
+      handler: 'affiliate-link',
+      reason: 'SHORT_LINK_STILL_NEEDS_RESOLVE',
+      data: { originalUrl: url, resolvedUrl, linkType: 'SHORT' }
+    };
   }
 
   if (finalType === 'VIDEO' || finalType === 'LIVE') {
-    return unsupportedResult({ message, kind: finalType, originalUrl: url, resolvedUrl, mode: classified.wasShort ? 'short-resolved' : 'direct-classification' });
+    return unsupportedResult({
+      message,
+      kind: finalType,
+      originalUrl: url,
+      resolvedUrl,
+      mode: classified.wasShort ? 'short-resolved' : 'direct-classification'
+    });
   }
 
   if (finalType !== 'PRODUCT') {
-    return unsupportedResult({ message, kind: finalType || 'OTHER', originalUrl: url, resolvedUrl, mode: classified.wasShort ? 'short-resolved' : 'direct-non-product' });
+    return unsupportedResult({
+      message,
+      kind: finalType || 'OTHER',
+      originalUrl: url,
+      resolvedUrl,
+      mode: classified.wasShort ? 'short-resolved' : 'direct-non-product'
+    });
   }
 
+  // Simulator can use real short-link classification while mocking only the
+  // Open API product/commission/affiliate output.
   if (mockAffiliate) {
     return {
       action: 'REPLY',
@@ -84,15 +126,34 @@ export async function handleAffiliateLink({ message, parsed, mockAffiliate = nul
         productName: mockAffiliate.productName,
         commission: mockAffiliate.commission
       })),
-      data: { originalUrl: url, resolvedUrl, linkType: 'PRODUCT', resolution: classified, mode: 'mock-after-real-classification' }
+      data: {
+        originalUrl: url,
+        resolvedUrl,
+        linkType: 'PRODUCT',
+        resolution: classified,
+        mode: 'mock-after-real-classification'
+      }
     };
   }
 
   if (processLink) {
-    const result = await processLink({ url, userId: message.senderId || 'guest', displayName: message.senderName, resolve: true });
+    const result = await processLink({
+      url,
+      userId: message.senderId || 'guest',
+      displayName: message.senderName,
+      resolve: true
+    });
+
     if (result?.linkType !== 'PRODUCT') {
-      return unsupportedResult({ message, kind: result?.linkType || 'OTHER', originalUrl: url, resolvedUrl: result?.resolvedUrl || resolvedUrl, mode: 'process-link-classification' });
+      return unsupportedResult({
+        message,
+        kind: result?.linkType || 'OTHER',
+        originalUrl: url,
+        resolvedUrl: result?.resolvedUrl || resolvedUrl,
+        mode: 'process-link-classification'
+      });
     }
+
     if (result?.affiliateUrl) {
       return {
         action: 'REPLY',
