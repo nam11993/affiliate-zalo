@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shopee Affiliate Zalo Bot — Short-link Simulator</title>
+  <style>
+    :root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color:#172033; background:#eef2f7; }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:24px 14px; }
+    main { max-width:1080px; margin:0 auto; display:grid; gap:16px; }
+    .card { background:#fff; border:1px solid #d8e0eb; border-radius:16px; padding:18px; box-shadow:0 10px 28px rgba(25,50,90,.06); }
+    h1 { margin:0 0 6px; font-size:24px; }
+    h2 { margin:0 0 12px; font-size:17px; }
+    p { margin:6px 0 0; color:#5d6879; line-height:1.5; }
+    .badge { display:inline-block; padding:4px 8px; border-radius:999px; background:#e8f0ff; color:#1358c8; font-size:12px; font-weight:700; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    label { display:block; font-size:13px; font-weight:700; margin:12px 0 6px; }
+    input, textarea { width:100%; border:1px solid #cbd5e1; border-radius:10px; padding:10px 12px; font:inherit; background:#fff; }
+    textarea { min-height:92px; resize:vertical; }
+    button { border:0; border-radius:10px; padding:10px 14px; font-weight:800; cursor:pointer; }
+    .primary { margin-top:14px; background:#1677ff; color:#fff; }
+    .secondary { background:#eef2f7; color:#26364d; }
+    .quick { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+    .chat { background:#e9edf3; padding:18px; border-radius:14px; min-height:250px; }
+    .row { display:flex; margin:10px 0; }
+    .row.user { justify-content:flex-end; }
+    .row.bot { justify-content:flex-start; }
+    .bubble { max-width:78%; white-space:pre-wrap; line-height:1.48; padding:12px 14px; border-radius:14px; overflow-wrap:anywhere; }
+    .user .bubble { background:#dff0ff; border-bottom-right-radius:4px; }
+    .bot .bubble { background:#fff; border:1px solid #cfd8e5; border-bottom-left-radius:4px; }
+    .quote { border-left:3px solid #1677ff; background:#f1f4f8; padding:8px 10px; margin-bottom:10px; color:#48566b; border-radius:6px; font-size:13px; }
+    pre { white-space:pre-wrap; overflow-wrap:anywhere; background:#111827; color:#e5e7eb; padding:13px; border-radius:10px; max-height:360px; overflow:auto; }
+    .status { font-size:13px; color:#667085; margin-top:8px; }
+    .ok { color:#087443; font-weight:700; }
+    .bad { color:#b42318; font-weight:700; }
+    .warnbox { margin-top:12px; padding:10px 12px; border-radius:10px; background:#fff6df; color:#7b4c00; border:1px solid #f2d38c; font-size:13px; line-height:1.45; }
+    @media (max-width:760px){ .grid{grid-template-columns:1fr}.bubble{max-width:92%} }
+  </style>
+</head>
+<body>
+<main>
+  <section class="card">
+    <span class="badge">SHORT LINK FIRST</span>
+    <h1>Shopee Affiliate Zalo Bot — Test phân loại link</h1>
+    <p>User chỉ cần dán link Shopee như khi chat thật. Nếu là <b>short link</b> (<code>vn.shp.ee</code>, <code>s.shopee.vn</code>...), hệ thống sẽ <b>tự resolve</b> rồi phân loại <b>PRODUCT / VIDEO / LIVE / OTHER</b> trước khi phản hồi.</p>
+
+    <div class="grid">
+      <div><label>Tên người gửi</label><input id="senderName" value="Nguyễn Hải Nam" /></div>
+      <div><label>Sender ID</label><input id="senderId" value="zalo-user-123" /></div>
+    </div>
+
+    <label>Tin nhắn Zalo giả lập <span style="color:#c62828">*</span></label>
+    <textarea id="text">https://vn.shp.ee/58nvmrdm?smtt=0.0.9</textarea>
+
+    <h2 style="margin-top:18px">Mock dữ liệu Shopee (chỉ dùng sau khi phân loại ra PRODUCT)</h2>
+    <div class="grid">
+      <div><label>Tên sản phẩm</label><input id="productName" value="Sản phẩm test Phase 1" /></div>
+      <div><label>Hoa hồng API</label><input id="commission" type="number" value="12350" /></div>
+    </div>
+    <label>Affiliate URL mock</label>
+    <input id="affiliateUrl" value="https://s.shopee.vn/TEST_PHASE1" />
+
+    <div class="quick">
+      <button class="secondary" id="productCase">Product direct</button>
+      <button class="secondary" id="videoCase">Video short link</button>
+      <button class="secondary" id="liveCase">Live direct</button>
+      <button class="secondary" data-msg="#vitien">#vitien</button>
+      <button class="secondary" data-msg="#donhang">#donhang</button>
+      <button class="secondary" data-msg="#bank 0123456789.VCB.NGUYEN VAN A">#bank</button>
+      <button class="secondary" data-msg="#ruttien">#ruttien</button>
+      <button class="secondary" data-msg="#id">#id</button>
+      <button class="secondary" data-msg="hello mọi người">Text thường</button>
+    </div>
+    <button id="run" class="primary">Phân tích & tạo phản hồi</button>
+    <div id="mode" class="status"></div>
+    <div class="warnbox"><b>Cách test đúng:</b> mở bằng <code>TEST_NHANH_WINDOWS.bat</code>. File BAT dùng PowerShell có sẵn trên Windows để resolve short link thật, không cần Node/npm. Nếu mở HTML trực tiếp bằng double-click thì browser không thể tự follow Shopee redirect vì giới hạn CORS.</div>
+  </section>
+
+  <section class="card">
+    <h2>Mô phỏng hội thoại Zalo</h2>
+    <div id="chat" class="chat"></div>
+  </section>
+
+  <section class="card">
+    <h2>Kết quả parser/router</h2>
+    <pre id="debug">{}</pre>
+  </section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const EXACT_COMMANDS = new Set(['vitien','donhang','ruttien','id']);
+  const ARG_COMMANDS = new Set(['bank']);
+  const ALLOWED_HOSTS = ['shopee.vn','s.shopee.vn','vn.shp.ee','shp.ee','shopee.page.link'];
+  const SHORT_HOSTS = new Set(['vn.shp.ee','shp.ee','s.shopee.vn','shopee.page.link']);
+  const hasLiveResolver = location.protocol === 'http:' || location.protocol === 'https:';
+
+  const RESOLVE_FIXTURES = new Map([
+    ['vn.shp.ee/58nvmrdm', { resolvedUrl:'https://sv.shopee.vn/share-video/demo?smtt=0.0.9', linkType:'VIDEO', source:'OFFLINE_FIXTURE' }]
+  ]);
+
+  $('mode').innerHTML = hasLiveResolver
+    ? 'Mode: <span class="ok">LIVE SHORT-LINK RESOLVER ON</span> — short link sẽ được follow redirect thật.'
+    : 'Mode: <span class="bad">OFFLINE</span> — hãy mở bằng TEST_NHANH_WINDOWS.bat để resolve mọi short link.';
+
+  function allowedHost(host){
+    host = String(host||'').toLowerCase().replace(/^www\./,'');
+    return ALLOWED_HOSTS.some(x => host === x || host.endsWith('.' + x));
+  }
+  function cleanUrl(v){ return v.replace(/[),.;!?\]}>'\"]+$/g,''); }
+  function extractUrls(text){ return (String(text||'').match(/https?:\/\/[^\s<]+/gi)||[]).map(cleanUrl); }
+  function extractShopeeUrls(text){
+    const out=[]; const seen=new Set();
+    for(const candidate of extractUrls(text)){
+      try { const u=new URL(candidate); if(allowedHost(u.hostname) && !seen.has(u.toString())){ seen.add(u.toString()); out.push(u.toString()); } } catch{}
+    }
+    return out;
+  }
+  function classifyShopeeUrl(input){
+    try {
+      const u=new URL(input); const host=u.hostname.toLowerCase().replace(/^www\./,''); const path=decodeURIComponent(u.pathname||'').toLowerCase();
+      if(host==='sv.shopee.vn' || path.includes('/share-video/') || path.includes('/video/')) return 'VIDEO';
+      if(host==='live.shopee.vn' || u.searchParams.get('type')==='live' || path.includes('/live/')) return 'LIVE';
+      if(/\/product\/\d+\/\d+/i.test(path) || /-i\.\d+\.\d+(?:\/|$)/i.test(path)) return 'PRODUCT';
+      if(SHORT_HOSTS.has(host)) return 'SHORT';
+      return 'OTHER';
+    } catch { return 'OTHER'; }
+  }
+  function fixtureResolve(input){
+    try {
+      const u = new URL(input);
+      const key = `${u.hostname.toLowerCase().replace(/^www\./,'')}${u.pathname}`;
+      return RESOLVE_FIXTURES.get(key) || null;
+    } catch { return null; }
+  }
+  async function resolveAndClassify(input){
+    const directType = classifyShopeeUrl(input);
+    if(directType !== 'SHORT') return {originalUrl:input,resolvedUrl:input,directType,linkType:directType,wasShort:false,source:'DIRECT'};
+
+    if(hasLiveResolver){
+      const res = await fetch('/api/resolve?url=' + encodeURIComponent(input));
+      const json = await res.json();
+      if(!json.ok) throw new Error(json.error || 'Resolve short link thất bại');
+      return json.data;
+    }
+
+    const fixture = fixtureResolve(input);
+    if(fixture) return {originalUrl:input,directType:'SHORT',wasShort:true,...fixture};
+    throw new Error('SHORT_LINK_NEEDS_LIVE_RESOLVER: mở bằng TEST_NHANH_WINDOWS.bat để phân loại link này.');
+  }
+  function parseMessage(text){
+    const value=String(text||'').trim();
+    if(!value) return {type:'EMPTY'};
+    const m=value.match(/^#([a-zA-Z0-9_]+)(?:\s+([\s\S]*))?$/);
+    if(m){
+      const command=m[1].toLowerCase(); const args=(m[2]||'').trim();
+      if(EXACT_COMMANDS.has(command)) return args ? {type:'UNKNOWN_COMMAND',command,args,reason:'COMMAND_DOES_NOT_ACCEPT_ARGS'} : {type:'COMMAND',command,args:''};
+      if(ARG_COMMANDS.has(command)) return {type:'COMMAND',command,args};
+      return {type:'UNKNOWN_COMMAND',command,args};
+    }
+    const urls=extractShopeeUrls(value);
+    if(urls.length) return {type:'SHOPEE_URL',urls,count:urls.length};
+    return {type:'TEXT',text:value};
+  }
+  function formatVnd(value){
+    if(value==null || !Number.isFinite(Number(value))) return null;
+    return new Intl.NumberFormat('vi-VN',{maximumFractionDigits:0}).format(Number(value))+'đ';
+  }
+  function buildAffiliateReply(name,url,product,commission){
+    const who=name?`@${name}`:'Bạn';
+    const lines=[`${who} ơi mua qua link này được hoa hồng nhé 👇`];
+    if(product) lines.push('',`🛍 ${product}`);
+    if(url) lines.push(`👉 Link mua: ${url}`);
+    if(commission!=='' && commission!=null) lines.push(`🌷 Hoa hồng ước tính: ${formatVnd(commission)}`);
+    return lines.join('\n');
+  }
+  function mediaReply(name){
+    const who=name?`@${name}`:'Bạn';
+    return `${who} Link Video/Live Shopee không đổi được affiliate. Bạn gửi link sản phẩm (trang chi tiết SP) nhé.`;
+  }
+  function unsupportedReply(name){
+    const who=name?`@${name}`:'Bạn';
+    return `${who} Link này không phải trang chi tiết sản phẩm Shopee. Bạn gửi link sản phẩm (trang chi tiết SP) nhé.`;
+  }
+  function commandReply(name,command){
+    const who=name?`@${name}`:'Bạn';
+    return `${who} ✅ Đã nhận diện lệnh #${command}. Handler này sẽ được bật ở phase sau.`;
+  }
+  function replyEnvelope(msg,text){
+    return {text,quoteMessageId:msg.messageId,mentions:[{userId:msg.senderId,displayName:msg.senderName}]};
+  }
+
+  async function route(msg){
+    const parsed=parseMessage(msg.text);
+    if(parsed.type==='SHOPEE_URL'){
+      const originalUrl=parsed.urls[0];
+      let classification;
+      try { classification = await resolveAndClassify(originalUrl); }
+      catch(error) { return {action:'NO_REPLY',reason:'SHORT_LINK_RESOLVE_FAILED',handler:'affiliate-link',parsed,error:String(error.message||error),diagnostic:String(error.message||error)}; }
+
+      const finalType = classification.linkType;
+      if(finalType==='VIDEO' || finalType==='LIVE') return {action:'REPLY',handler:'unsupported-media-link',parsed,classification,reply:replyEnvelope(msg,mediaReply(msg.senderName))};
+      if(finalType==='PRODUCT') return {action:'REPLY',handler:'affiliate-link',parsed,classification,reply:replyEnvelope(msg,buildAffiliateReply(msg.senderName,$('affiliateUrl').value,$('productName').value,$('commission').value))};
+      return {action:'REPLY',handler:'unsupported-shopee-link',parsed,classification,reply:replyEnvelope(msg,unsupportedReply(msg.senderName))};
+    }
+    if(parsed.type==='COMMAND') return {action:'REPLY',handler:`command:${parsed.command}`,parsed,reply:replyEnvelope(msg,commandReply(msg.senderName,parsed.command))};
+    if(parsed.type==='UNKNOWN_COMMAND') return {action:'NO_REPLY',reason:'UNKNOWN_COMMAND',parsed};
+    if(parsed.type==='TEXT') return {action:'NO_REPLY',reason:'NORMAL_TEXT',parsed};
+    return {action:'NO_REPLY',reason:'EMPTY_MESSAGE',parsed};
+  }
+
+  function render(msg,result){
+    const chat=$('chat'); chat.innerHTML='';
+    const user=document.createElement('div'); user.className='row user';
+    const ub=document.createElement('div'); ub.className='bubble'; ub.textContent=msg.text || '(tin nhắn trống)'; user.appendChild(ub); chat.appendChild(user);
+    if(result.reply?.text){
+      const bot=document.createElement('div'); bot.className='row bot';
+      const bb=document.createElement('div'); bb.className='bubble';
+      const q=document.createElement('div'); q.className='quote'; q.textContent=`${msg.senderName}\n${msg.text}`; bb.appendChild(q);
+      const txt=document.createElement('div'); txt.textContent=result.reply.text; bb.appendChild(txt); bot.appendChild(bb); chat.appendChild(bot);
+    } else {
+      const bot=document.createElement('div'); bot.className='row bot'; const bb=document.createElement('div'); bb.className='bubble';
+      bb.textContent=result.diagnostic ? `Simulator: ${result.diagnostic}` : `Bot không phản hồi (${result.reason||result.action})`;
+      bot.appendChild(bb); chat.appendChild(bot);
+    }
+  }
+  async function run(){
+    $('run').disabled=true; $('run').textContent='Đang resolve/phân tích...';
+    const msg={senderId:$('senderId').value.trim(),senderName:$('senderName').value.trim(),groupId:'simulator-group',messageId:'sim-'+Date.now(),text:$('text').value};
+    try {
+      const result=await route(msg); render(msg,result); $('debug').textContent=JSON.stringify({message:msg,...result},null,2);
+    } finally {
+      $('run').disabled=false; $('run').textContent='Phân tích & tạo phản hồi';
+    }
+  }
+
+  $('run').addEventListener('click',run);
+  document.querySelectorAll('[data-msg]').forEach(btn=>btn.addEventListener('click',()=>{ $('text').value=btn.dataset.msg; run(); }));
+  $('productCase').addEventListener('click',()=>{ $('text').value='https://shopee.vn/product/731999859/41261407193?d_id=e13c7&uls_trackid=abc'; run(); });
+  $('videoCase').addEventListener('click',()=>{ $('text').value='https://vn.shp.ee/58nvmrdm?smtt=0.0.9'; run(); });
+  $('liveCase').addEventListener('click',()=>{ $('text').value='https://live.shopee.vn/share?from=live&viewer=1'; run(); });
+  run();
+</script>
+</body>
+</html>
